@@ -11,6 +11,7 @@ import {
   LuChevronRight as ChevronRight,
   LuLogOut as LogOut,
   LuBell as Bell,
+  LuFolderOpen as FolderOpen,
 } from "react-icons/lu";
 import { navItems } from "@/lib/data";
 
@@ -18,6 +19,7 @@ const icons = {
   LayoutDashboard,
   Stethoscope,
   CalendarDays,
+  FolderOpen,
   Settings,
 };
 

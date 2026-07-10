@@ -31,3 +31,65 @@ body {
   background-color: #cbd5e1;
   border-radius: 9999px;
 }
+
+/* Docx Document Viewer Overrides */
+.docx-container {
+  color: #1e293b !important;
+  line-height: 1.6;
+  font-family: var(--font-sans), serif;
+}
+.docx-container p {
+  margin-bottom: 1em !important;
+}
+.docx-container h1,
+.docx-container h2,
+.docx-container h3,
+.docx-container h4,
+.docx-container h5,
+.docx-container h6 {
+  font-weight: 700 !important;
+  margin-top: 1.5em !important;
+  margin-bottom: 0.5em !important;
+  color: #0f172a !important;
+}
+.docx-container h1 { font-size: 2em !important; }
+.docx-container h2 { font-size: 1.5em !important; }
+.docx-container h3 { font-size: 1.25em !important; }
+.docx-container table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 1.5em 0 !important;
+}
+.docx-container th,
+.docx-container td {
+  border: 1px solid #cbd5e1 !important;
+  padding: 0.5em 0.75em !important;
+}
+.docx-container ul {
+  list-style-type: disc !important;
+  padding-left: 1.5em !important;
+  margin-bottom: 1em !important;
+}
+.docx-container ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5em !important;
+  margin-bottom: 1em !important;
+}
+
+/* Clear default docx wrapper background, letting pages sit on our viewport background */
+.docx-wrapper {
+  background: transparent !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* Individual page formatting */
+.docx-wrapper > section.docx {
+  background: white !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3) !important;
+  border-radius: 8px !important;
+  margin: 0 auto 2rem auto !important;
+  box-sizing: border-box !important;
+}

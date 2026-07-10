@@ -4,36 +4,27 @@ import { LuShieldCheck as ShieldCheck } from "react-icons/lu";
 
 export default function SubmitSection({ form, onChange, onSubmit, submitting }) {
   const canSubmit =
-    form.college && form.applicantName && form.purpose && form.dates && form.organizerSignatureDate;
+    form.event_applicant_name &&
+    form.event_applicant_institution &&
+    form.event_purpose &&
+    form.event_date;
 
   return (
     <section
       aria-label="Sign-off and submission"
-      className="rounded-xl border border-primary-100 bg-white p-5"
+      className="rounded-2xl border border-slate-200 bg-white p-5 "
     >
       <div className="flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-xs font-semibold text-white">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
           4
         </span>
-        <h2 className="text-sm font-semibold text-primary-950">Sign-off &amp; submit</h2>
+        <h2 className="text-sm font-semibold text-slate-800">Sign-off &amp; submit</h2>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <label className="block">
-          <span className="text-xs font-medium text-primary-600">Date</span>
-          <input
-            type="date"
-            className="mt-1.5 w-full rounded-lg border border-primary-100 bg-primary-50/40 px-3 py-2 text-sm text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:bg-white"
-            value={form.organizerSignatureDate}
-            onChange={(e) => onChange("organizerSignatureDate", e.target.value)}
-          />
-        </label>
-
-        <div className="sm:col-span-2 flex items-end">
-          <div className="w-full rounded-lg border border-dashed border-primary-200 bg-primary-50/40 px-3 py-2.5 text-xs text-primary-500">
-            By submitting, you confirm this is signed by the organizer. It will be routed to{" "}
-            <span className="font-semibold text-primary-700">HOD → HOI → Manager</span> for approval.
-          </div>
+      <div className="mt-4">
+        <div className="w-full rounded-lg border border-dashed border-blue-300 bg-blue-50/60 px-3 py-3 text-xs text-blue-600/80">
+          By submitting, you confirm this request is sign-off ready. It will be routed to{" "}
+          <span className="font-semibold text-blue-700">HOD → HOI → Manager</span> for approval.
         </div>
       </div>
 
@@ -41,14 +32,14 @@ export default function SubmitSection({ form, onChange, onSubmit, submitting }) 
         type="button"
         disabled={!canSubmit || submitting}
         onClick={onSubmit}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-secondary-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-secondary-700 disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-400"
+        className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 shadow-lg shadow-blue-600/25 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
       >
         <ShieldCheck size={16} />
         {submitting ? "Submitting…" : "Request approval"}
       </button>
       {!canSubmit && (
-        <p className="mt-2 text-xs text-primary-400">
-          Fill in college, applicant, purpose, date(s) and sign-off date to submit.
+        <p className="mt-2 text-xs text-slate-400">
+          Fill in applicant name, institution, purpose, and date to submit.
         </p>
       )}
     </section>

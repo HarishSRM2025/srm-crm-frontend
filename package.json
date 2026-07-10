@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@jvmr/pptx-to-html": "^1.0.1",
+    "docx-preview": "^0.4.0",
+    "jszip": "^3.10.1",
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4",

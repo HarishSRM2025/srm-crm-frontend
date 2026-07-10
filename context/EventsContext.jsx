@@ -1,69 +1,102 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { seedRequests, STATUS } from "@/lib/events-data";
+import { createEvent, fetchEvents, updateEvent } from "@/lib/events-api";
 
 const EventsContext = createContext(null);
 
-let idCounter = 1043;
-
 export function EventsProvider({ children }) {
   const [requests, setRequests] = useState(seedRequests());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const addRequest = (form) => {
-    const id = `EVT-${idCounter++}`;
-    const newRequest = {
-      id,
-      submittedOn: new Date().toISOString().slice(0, 10),
-      form,
-      approvals: {
-        hod: { status: STATUS.PENDING, by: "", date: "", note: "" },
-        hoi: { status: STATUS.PENDING, by: "", date: "", note: "" },
-        manager: { status: STATUS.PENDING, by: "", date: "", note: "" },
-      },
-      officeUse: {
-        availability: "",
-        allotment: "",
-        allotmentItems: [],
-        alternateDate: "",
+  useEffect(() => {
+    let active = true;
+
+    fetchEvents()
+      .then((events) => {
+        if (!active) return;
+        setRequests(events);
+        setError("");
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err.message || "Unable to load events");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const addRequest = async (form) => {
+    const newRequest = await createEvent(form);
+    setRequests((prev) => [newRequest, ...prev.filter((request) => request.id !== newRequest.id)]);
+    return newRequest.id;
+  };
+
+  const decideApproval = async (id, stage, status, { by, note }) => {
+    const r = requests.find((req) => req.id === id);
+    if (!r) return;
+
+    const updatedApprovals = {
+      ...r.approvals,
+      [stage]: {
+        status,
+        by: by || "You",
+        date: new Date().toISOString().slice(0, 10),
+        note: note || "",
       },
     };
-    setRequests((prev) => [newRequest, ...prev]);
-    return id;
+
+    try {
+      const response = await updateEvent(id, { approvals: updatedApprovals });
+      setRequests((prev) =>
+        prev.map((req) => (req.id === id ? response : req))
+      );
+    } catch (err) {
+      console.error("Failed to update approval", err);
+      throw err;
+    }
   };
 
-  const decideApproval = (id, stage, status, { by, note }) => {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              approvals: {
-                ...r.approvals,
-                [stage]: {
-                  status,
-                  by: by || "You",
-                  date: new Date().toISOString().slice(0, 10),
-                  note: note || "",
-                },
-              },
-            }
-          : r
-      )
-    );
-  };
+  const updateOfficeUse = async (id, officeUse) => {
+    const r = requests.find((req) => req.id === id);
+    if (!r) return;
 
-  const updateOfficeUse = (id, officeUse) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, officeUse: { ...r.officeUse, ...officeUse } } : r))
-    );
+    const updatedOfficeUse = {
+      ...r.officeUse,
+      ...officeUse,
+    };
+
+    try {
+      const response = await updateEvent(id, { officeUse: updatedOfficeUse });
+      setRequests((prev) =>
+        prev.map((req) => (req.id === id ? response : req))
+      );
+    } catch (err) {
+      console.error("Failed to update office use", err);
+      throw err;
+    }
   };
 
   const getRequest = (id) => requests.find((r) => r.id === id);
 
   const value = useMemo(
-    () => ({ requests, addRequest, decideApproval, updateOfficeUse, getRequest }),
-    [requests]
+    () => ({
+      requests,
+      loading,
+      error,
+      addRequest,
+      decideApproval,
+      updateOfficeUse,
+      getRequest,
+    }),
+    [requests, loading, error]
   );
 
   return <EventsContext.Provider value={value}>{children}</EventsContext.Provider>;

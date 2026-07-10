@@ -2,23 +2,23 @@
 
 function ToggleField({ label, value, onChange }) {
   return (
-    <div className="rounded-lg border border-primary-100 bg-primary-50/40 p-3">
-      <p className="text-xs font-medium text-primary-600">{label}</p>
+    <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+      <p className="text-xs font-medium text-blue-700">{label}</p>
       <div className="mt-2 flex gap-2">
         {[
-          { value: "required", label: "Required" },
-          { value: "not-required", label: "Not required" },
+          { value: true, label: "Required" },
+          { value: false, label: "Not required" },
         ].map((opt) => (
           <button
             type="button"
-            key={opt.value}
+            key={opt.value.toString()}
             onClick={() => onChange(opt.value)}
             className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
               value === opt.value
-                ? opt.value === "required"
-                  ? "bg-secondary-600 text-white"
-                  : "bg-primary-200 text-primary-800"
-                : "bg-white text-primary-400 border border-primary-100 hover:border-primary-300"
+                ? opt.value
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                  : "bg-slate-200 text-slate-700"
+                : "bg-white text-slate-400 border border-slate-200 hover:border-blue-300"
             }`}
           >
             {opt.label}
@@ -33,25 +33,25 @@ export default function RequirementsSection({ form, onChange }) {
   return (
     <section
       aria-label="Hall requirements"
-      className="rounded-xl border border-primary-100 bg-white p-5"
+      className="rounded-2xl border border-slate-200 bg-white p-5"
     >
       <div className="flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-xs font-semibold text-white">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
           3
         </span>
-        <h2 className="text-sm font-semibold text-primary-950">Requirements</h2>
+        <h2 className="text-sm font-semibold text-slate-800">Requirements</h2>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <ToggleField
-          label="8. Mike sets required"
-          value={form.mikeSets}
-          onChange={(v) => onChange("mikeSets", v)}
+          label="Mike sets required"
+          value={!!form.event_micset}
+          onChange={(v) => onChange("event_micset", v)}
         />
         <ToggleField
-          label="9. White board"
-          value={form.whiteBoard}
-          onChange={(v) => onChange("whiteBoard", v)}
+          label="White board"
+          value={!!form.event_white_board}
+          onChange={(v) => onChange("event_white_board", v)}
         />
       </div>
     </section>

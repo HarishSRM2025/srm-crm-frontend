@@ -1,16 +1,5 @@
 "use client";
 
-const sessionLabels = {
-  forenoon: "Forenoon (8:00 – 12:00 noon)",
-  afternoon: "Afternoon (1:00 – 4:00 PM)",
-  "full-day": "Full day",
-};
-
-const reqLabels = {
-  required: "Required",
-  "not-required": "Not required",
-};
-
 function Row({ label, value }) {
   return (
     <div className="flex flex-col gap-0.5 border-b border-primary-50 py-2.5 last:border-0 sm:flex-row sm:items-center sm:justify-between">
@@ -32,15 +21,15 @@ export default function RequestDetailsCard({ request }) {
 
       <div className="mt-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-primary-400">
-          College &amp; applicant
+          Applicant &amp; Institution
         </p>
         <div className="mt-1">
-          <Row label="College" value={form.college} />
-          <Row label="Institution (applicant)" value={form.institution} />
-          <Row label="Applicant name" value={form.applicantName} />
-          <Row label="Department" value={form.department} />
-          <Row label="Designation" value={form.designation} />
-          <Row label="Organizer / mobile" value={form.organizerName} />
+          <Row label="Institution (applicant)" value={form.event_applicant_institution} />
+          <Row label="Applicant name" value={form.event_applicant_name} />
+          <Row label="Department" value={form.event_department} />
+          <Row label="Designation" value={form.event_designation} />
+          <Row label="Organizer name" value={form.event_organizer_name} />
+          <Row label="Organizer phone" value={form.event_organizer_phone} />
         </div>
       </div>
 
@@ -49,21 +38,22 @@ export default function RequestDetailsCard({ request }) {
           Meeting / seminar / function
         </p>
         <div className="mt-1">
-          <Row label="Purpose" value={form.purpose} />
-          <Row label="Date(s)" value={form.dates} />
-          <Row label="Session" value={sessionLabels[form.session]} />
-          <Row label="Expected participants" value={form.expectedParticipants} />
-          <Row label="VIP / guest" value={form.vipGuest} />
-          <Row label="Presiding officers" value={form.presidingOfficers} />
+          <Row label="Purpose" value={form.event_purpose} />
+          <Row label="Event details" value={form.event_details} />
+          <Row label="Date" value={form.event_date} />
+          <Row label="Start time" value={form.event_start_time} />
+          <Row label="End time" value={form.event_end_time} />
+          <Row label="Expected participants" value={form.event_participant_count} />
+          <Row label="VIP / guest" value={form.event_guest_name} />
+          <Row label="Presiding officers" value={form.event_presiding_officers} />
         </div>
       </div>
 
       <div className="mt-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-primary-400">Requirements</p>
         <div className="mt-1">
-          <Row label="Mike sets" value={reqLabels[form.mikeSets]} />
-          <Row label="White board" value={reqLabels[form.whiteBoard]} />
-          <Row label="Organizer sign-off date" value={form.organizerSignatureDate} />
+          <Row label="Mike sets" value={form.event_micset ? "Required" : "Not required"} />
+          <Row label="White board" value={form.event_white_board ? "Required" : "Not required"} />
         </div>
       </div>
     </section>

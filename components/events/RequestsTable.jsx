@@ -14,7 +14,7 @@ const filters = [
 ];
 
 export default function RequestsTable() {
-  const { requests } = useEvents();
+  const { requests, loading, error } = useEvents();
   const [filter, setFilter] = useState("all");
 
   const filtered = requests.filter((r) =>
@@ -46,6 +46,11 @@ export default function RequestsTable() {
       </div>
 
       <div className="mt-4 overflow-x-auto">
+        {error && (
+          <p className="mb-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[10px] font-bold text-amber-700">
+            Showing local sample data because the API could not be reached.
+          </p>
+        )}
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">
@@ -91,7 +96,7 @@ export default function RequestsTable() {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={8} className="py-8 text-center text-xs font-semibold text-slate-400">
-                  No requests in this filter.
+                  {loading ? "Loading events..." : "No requests in this filter."}
                 </td>
               </tr>
             )}
