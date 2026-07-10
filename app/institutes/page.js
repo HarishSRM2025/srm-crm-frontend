@@ -10,6 +10,8 @@ import {
   LuCircleAlert as AlertCircle,
   LuCircleCheck as CheckCircle,
   LuChevronRight as ChevronRight,
+  LuX as XIcon,
+  LuTriangleAlert as WarningIcon,
 } from "react-icons/lu";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
@@ -33,6 +35,10 @@ export default function InstitutesPage() {
   const [newDeptName, setNewDeptName] = useState("");
   const [submittingInst, setSubmittingInst] = useState(false);
   const [submittingDept, setSubmittingDept] = useState(false);
+
+  // Confirmation modal state
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  // confirmDialog shape: { title, message, onConfirm, loading }
 
   // Load data
   const loadData = async () => {
@@ -76,31 +82,33 @@ export default function InstitutesPage() {
     }
   };
 
-  const handleDeleteInstitute = async (id, name) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete "${name}"? This will delete all its departments and event bookings associated with it.`
-      )
-    ) {
-      return;
-    }
-    setError("");
-    setSuccess("");
-    try {
-      await deleteInstitute(id);
-      setSuccess(`Institute "${name}" has been deleted.`);
-      if (selectedInstId === id) {
-        setSelectedInstId(null);
-      }
-      // Reload
-      const data = await fetchInstitutes();
-      setInstitutes(data || []);
-      if (data && data.length > 0) {
-        setSelectedInstId(data[0].id);
-      }
-    } catch (err) {
-      setError("Failed to delete institute: " + err.message);
-    }
+  const handleDeleteInstitute = (id, name) => {
+    setConfirmDialog({
+      title: "Delete Institute",
+      message: `Are you sure you want to delete "${name}"? All departments under this institute will also be permanently removed.`,
+      loading: false,
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, loading: true }));
+        setError("");
+        setSuccess("");
+        try {
+          await deleteInstitute(id);
+          setSuccess(`Institute "${name}" has been deleted.`);
+          if (selectedInstId === id) {
+            setSelectedInstId(null);
+          }
+          const data = await fetchInstitutes();
+          setInstitutes(data || []);
+          if (data && data.length > 0) {
+            setSelectedInstId(data[0].id);
+          }
+        } catch (err) {
+          setError("Failed to delete institute: " + err.message);
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
   };
 
   const handleAddDepartment = async (e) => {
@@ -123,21 +131,27 @@ export default function InstitutesPage() {
     }
   };
 
-  const handleDeleteDepartment = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete the department "${name}"?`)) {
-      return;
-    }
-    setError("");
-    setSuccess("");
-    try {
-      await deleteDepartment(id);
-      setSuccess(`Department "${name}" deleted.`);
-      // Reload
-      const data = await fetchInstitutes();
-      setInstitutes(data || []);
-    } catch (err) {
-      setError("Failed to delete department: " + err.message);
-    }
+  const handleDeleteDepartment = (id, name) => {
+    setConfirmDialog({
+      title: "Delete Department",
+      message: `Are you sure you want to delete the department "${name}"? This action cannot be undone.`,
+      loading: false,
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, loading: true }));
+        setError("");
+        setSuccess("");
+        try {
+          await deleteDepartment(id);
+          setSuccess(`Department "${name}" deleted.`);
+          const data = await fetchInstitutes();
+          setInstitutes(data || []);
+        } catch (err) {
+          setError("Failed to delete department: " + err.message);
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
   };
 
   const selectedInst = institutes.find((i) => i.id === selectedInstId);
@@ -353,6 +367,71 @@ export default function InstitutesPage() {
           )}
         </main>
       </div>
+      {/* Delete Confirmation Modal */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            onClick={() => !confirmDialog.loading && setConfirmDialog(null)}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md mx-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/10 animate-in zoom-in-95 duration-200">
+            {/* Close button */}
+            <button
+              onClick={() => !confirmDialog.loading && setConfirmDialog(null)}
+              className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              disabled={confirmDialog.loading}
+            >
+              <XIcon size={16} />
+            </button>
+
+            {/* Warning icon */}
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 border border-red-100 mx-auto mb-4">
+              <WarningIcon size={22} className="text-red-500" />
+            </div>
+
+            {/* Title */}
+            <h3 className="text-sm font-bold text-slate-800 text-center">
+              {confirmDialog.title}
+            </h3>
+
+            {/* Message */}
+            <p className="mt-2 text-xs text-slate-500 text-center leading-relaxed">
+              {confirmDialog.message}
+            </p>
+
+            {/* Actions */}
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                disabled={confirmDialog.loading}
+                className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDialog.onConfirm}
+                disabled={confirmDialog.loading}
+                className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-red-500 shadow-md shadow-red-600/25 transition-all disabled:opacity-70"
+              >
+                {confirmDialog.loading ? (
+                  <>
+                    <Loader className="animate-spin" size={14} />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash size={14} />
+                    Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
