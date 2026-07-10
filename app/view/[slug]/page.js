@@ -51,7 +51,16 @@ export default function SecureViewerPage() {
   const [slides, setSlides] = useState([]);
   const [renderingPptx, setRenderingPptx] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const [slideScale, setSlideScale] = useState(1);
+  // FIX #3: start at 0 (not 1) so we never paint a full-size (960px) slide
+  // inside a narrow, overflow-hidden container before the ResizeObserver
+  // has reported the real width. Rendering is gated on slideScale > 0 below.
+  const [slideScale, setSlideScale] = useState(0);
+  // FIX #4: the library scales its output to fit inside 960x540 (letterboxed)
+  // based on the SOURCE deck's real aspect ratio, which may not be 16:9.
+  // We measure the actual rendered content box instead of assuming 960x540,
+  // so we scale/crop the container to what's really there.
+  const [nativeSlideSize, setNativeSlideSize] = useState({ width: 960, height: 540 });
+  const measureProbeRef = useRef(null);
 
   const isDocx =
     mimeType.includes("wordprocessingml") ||
@@ -119,23 +128,6 @@ export default function SecureViewerPage() {
     }
 
     try {
-      // Fetch the file from backend download route with password.
-      // We need to know the actual filename first. To do this, we query the
-      // backend slug endpoint which returns templateInfo. But templateInfo
-      // does NOT expose the filename for security. So we need a different
-      // approach: use the slug itself as the lookup key in the download route.
-      // Let's add a slug-based download on the backend... Actually the download
-      // route uses the internal filename. Let's use the slug-based verification
-      // endpoint that returns the file details when password is correct.
-
-      // We'll fetch via a special endpoint: /template-blob-url/view-file/:slug?password=xxx
-      // But we don't have that yet. Instead, let's fetch using the existing download
-      // route pattern. The backend getTemplateFileDetails finds by filename.
-      // Since we don't have the filename from the frontend (it's hidden for security),
-      // we'll create a new proxy approach: fetch from /template-blob-url/download-by-slug/:slug?password=xxx
-
-      // Actually, the simplest approach: make a fetch directly to the backend
-      // and use the slug to look up the record + verify password in one call.
       const res = await fetch(
         `${API_BASE_URL}/template-blob-url/view-file/${slug}?password=${encodeURIComponent(password)}`,
         { cache: "no-store" }
@@ -177,7 +169,7 @@ export default function SecureViewerPage() {
           return;
         }
         setRemainingSeconds(Math.floor(remainMs / 1000));
-        
+
         if (!templateInfo.firstViewedAt) {
           setTemplateInfo(prev => ({
             ...prev,
@@ -195,7 +187,6 @@ export default function SecureViewerPage() {
   };
 
   const handleExpire = useCallback(() => {
-    // Clear blob URL and revoke object URL
     if (blobUrl) {
       URL.revokeObjectURL(blobUrl);
       setBlobUrl(null);
@@ -245,7 +236,6 @@ export default function SecureViewerPage() {
     const handleContextMenu = (e) => e.preventDefault();
 
     const handleKeyDown = (e) => {
-      // Block Ctrl+S, Ctrl+P, Ctrl+C, Ctrl+A, F12, PrintScreen
       if (
         (e.ctrlKey && (e.key === "s" || e.key === "S")) ||
         (e.ctrlKey && (e.key === "p" || e.key === "P")) ||
@@ -287,7 +277,7 @@ export default function SecureViewerPage() {
         const blob = await response.blob();
         const docx = await import("docx-preview");
         if (active && docxContainerRef.current) {
-          docxContainerRef.current.innerHTML = ""; // Clear loaders
+          docxContainerRef.current.innerHTML = "";
           await docx.renderAsync(blob, docxContainerRef.current, null, {
             className: "docx",
             inWrapper: true,
@@ -313,21 +303,52 @@ export default function SecureViewerPage() {
 
   }, [phase, blobUrl, isDocx]);
 
-  // Step 6: Handle PPTX slide scaling dynamically based on container width
+  // Step 6a: Measure the REAL size the library rendered the slide at.
+  // pptxToHtml scales its own output to fit inside the requested 960x540
+  // box (letterbox: true) based on the source deck's actual aspect ratio,
+  // so the true content box is very often NOT 960x540. We render slide 0
+  // into an off-screen, unconstrained probe and measure it directly rather
+  // than trusting our own request params.
+  useEffect(() => {
+    if (slides.length === 0 || !measureProbeRef.current) return;
+
+    const raf = requestAnimationFrame(() => {
+      const probe = measureProbeRef.current;
+      if (!probe) return;
+      const first = probe.firstElementChild;
+      const rect = first
+        ? first.getBoundingClientRect()
+        : probe.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setNativeSlideSize({ width: rect.width, height: rect.height });
+      }
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, [slides]);
+
+  // Step 6b: Handle PPTX slide scaling dynamically based on container width
+  // AND the real measured slide size (not a hardcoded 960x540 guess).
   useEffect(() => {
     if (phase !== "viewing" || !slideContainerRef.current || slides.length === 0) return;
+
+    const rect = slideContainerRef.current.getBoundingClientRect();
+    if (rect.width > 0) {
+      setSlideScale(rect.width / nativeSlideSize.width);
+    }
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
         const { width } = entry.contentRect;
-        const scale = width / 960;
-        setSlideScale(scale);
+        if (width > 0) {
+          setSlideScale(width / nativeSlideSize.width);
+        }
       }
     });
 
     resizeObserver.observe(slideContainerRef.current);
     return () => resizeObserver.disconnect();
-  }, [phase, slides]);
+  }, [phase, slides, nativeSlideSize]);
 
   // Step 7: Parse and convert PowerPoint slides (.pptx / .ppt)
   useEffect(() => {
@@ -337,11 +358,13 @@ export default function SecureViewerPage() {
 
     async function renderPptx() {
       setRenderingPptx(true);
+      setSlideScale(0); // reset so the new deck doesn't flash at a stale scale
+      setNativeSlideSize({ width: 960, height: 540 }); // reset guess until we measure the new deck
       try {
         const response = await fetch(blobUrl);
         const arrayBuffer = await response.arrayBuffer();
         const { pptxToHtml } = await import("@jvmr/pptx-to-html");
-        
+
         const slidesHtml = await pptxToHtml(arrayBuffer, {
           width: 960,
           height: 540,
@@ -355,6 +378,7 @@ export default function SecureViewerPage() {
         }
       } catch (err) {
         console.error("Error rendering pptx:", err);
+        if (active) setSlides([]);
       } finally {
         if (active) {
           setRenderingPptx(false);
@@ -378,7 +402,6 @@ export default function SecureViewerPage() {
 
   // --- RENDER ---
 
-  // Loading state
   if (phase === "loading") {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
@@ -390,7 +413,6 @@ export default function SecureViewerPage() {
     );
   }
 
-  // Error state
   if (phase === "error") {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
@@ -400,13 +422,11 @@ export default function SecureViewerPage() {
           </div>
           <h1 className="text-sm font-bold text-slate-800">Access Denied</h1>
           <p className="text-xs text-slate-500 font-semibold">{errorMessage}</p>
-
         </div>
       </div>
     );
   }
 
-  // Handle comment submission
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     setCommentError("");
@@ -427,7 +447,6 @@ export default function SecureViewerPage() {
     }
   };
 
-  // Expired state
   if (phase === "expired") {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
@@ -443,7 +462,6 @@ export default function SecureViewerPage() {
             Contact the administrator for a new link with a fresh password.
           </p>
 
-          {/* Comment / Feedback Section */}
           <div className="border-t border-slate-100 pt-5 text-left space-y-3">
             <div className="flex items-center gap-2">
               <MessageIcon size={14} className="text-slate-500" />
@@ -497,7 +515,6 @@ export default function SecureViewerPage() {
     );
   }
 
-  // Password prompt state
   if (phase === "password") {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 via-primary-50/20 to-slate-100 p-4">
@@ -570,7 +587,6 @@ export default function SecureViewerPage() {
     );
   }
 
-  // Viewing state — Secure embedded viewer
   if (phase === "viewing") {
     const urgentTimer = remainingSeconds <= 60;
 
@@ -579,7 +595,6 @@ export default function SecureViewerPage() {
         className="fixed inset-0 flex flex-col bg-slate-900"
         style={{ userSelect: "none", WebkitUserSelect: "none" }}
       >
-        {/* Top bar with timer and info */}
         <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800 border-b border-slate-700 shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-600/20 text-primary-400">
@@ -595,7 +610,6 @@ export default function SecureViewerPage() {
             </div>
           </div>
 
-          {/* Countdown Timer */}
           {templateInfo?.template_blob_url_epires_duriation > 0 && (
             <div
               className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-bold border ${
@@ -611,9 +625,7 @@ export default function SecureViewerPage() {
           )}
         </div>
 
-        {/* Document Viewer Area */}
         <div className="flex-1 relative overflow-hidden">
-          {/* Transparent overlay to block interactions with the iframe content */}
           <div
             className="absolute inset-0 z-10"
             style={{ pointerEvents: "none" }}
@@ -664,28 +676,50 @@ export default function SecureViewerPage() {
                 </div>
               ) : (
                 <div className="w-full max-w-4xl flex flex-col items-center space-y-4">
-                  {/* Active Slide Rendering Container */}
+                  {/* Hidden probe: renders slide 0 unconstrained so we can measure
+                      its REAL width/height instead of assuming 960x540. */}
+                  <div
+                    ref={measureProbeRef}
+                    aria-hidden="true"
+                    style={{
+                      position: "fixed",
+                      top: 0,
+                      left: 0,
+                      visibility: "hidden",
+                      pointerEvents: "none",
+                      zIndex: -1,
+                    }}
+                    dangerouslySetInnerHTML={{ __html: slides[0] || "" }}
+                  />
+
+                  {/* Active Slide Rendering Container — aspect ratio now driven by
+                      the REAL measured slide size, not a hardcoded 16:9 guess. */}
                   <div
                     ref={slideContainerRef}
                     className="w-full bg-white rounded-2xl border border-slate-700 shadow-2xl overflow-hidden relative"
-                    style={{ aspectRatio: "16/9", position: "relative" }}
+                    style={{
+                      aspectRatio: `${nativeSlideSize.width}/${nativeSlideSize.height}`,
+                      position: "relative",
+                    }}
                   >
-                    {/* The slide itself, scaled */}
-                    <div
-                      className="absolute left-0 top-0 origin-top-left"
-                      style={{
-                        transform: `scale(${slideScale})`,
-                        width: "960px",
-                        height: "540px",
-                        position: "absolute",
-                        overflow: "hidden",
-                      }}
-                    >
+                    {/* FIX #3: only paint once we have a real, non-zero scale */}
+                    {slideScale > 0 && (
                       <div
-                        className="pptx-slide w-full h-full p-0 text-black select-none pointer-events-none"
-                        dangerouslySetInnerHTML={{ __html: slides[currentSlideIndex] }}
-                      />
-                    </div>
+                        className="absolute left-0 top-0 origin-top-left"
+                        style={{
+                          transform: `scale(${slideScale})`,
+                          width: `${nativeSlideSize.width}px`,
+                          height: `${nativeSlideSize.height}px`,
+                          position: "absolute",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          className="pptx-slide w-full h-full p-0 text-black select-none pointer-events-none"
+                          dangerouslySetInnerHTML={{ __html: slides[currentSlideIndex] }}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Navigation Controls */}
@@ -697,7 +731,7 @@ export default function SecureViewerPage() {
                     >
                       Previous
                     </button>
-                    
+
                     <span className="text-xs font-bold text-slate-300">
                       Slide {currentSlideIndex + 1} of {slides.length}
                     </span>
@@ -712,27 +746,39 @@ export default function SecureViewerPage() {
                   </div>
 
                   {/* Thumbnails list */}
+                  {/* FIX #1 (revised): thumbnail is 112px wide (w-28). Scale factor is
+                      112 / nativeSlideSize.width (measured, not assumed 960px), and the
+                      inverse of that scale is how much wider than 100% the inner content
+                      needs to be so it lands back at exactly 112px after scaling down. */}
                   <div className="flex items-center gap-2 overflow-x-auto py-2 w-full max-w-full no-scrollbar">
-                    {slides.map((slide, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setCurrentSlideIndex(idx)}
-                        className={`relative flex-shrink-0 w-28 aspect-[16/9] bg-white rounded-lg border-2 overflow-hidden cursor-pointer transition-all ${
-                          idx === currentSlideIndex 
-                            ? "border-primary-500 scale-105 shadow-md shadow-primary-500/20" 
-                            : "border-slate-700 hover:border-slate-500 opacity-60 hover:opacity-100"
-                        }`}
-                      >
-                        <div 
-                          className="w-full h-full p-1 text-[2px] leading-[3px] select-none pointer-events-none overflow-hidden scale-[0.15] origin-top-left"
-                          style={{ width: "666%", height: "666%" }}
-                          dangerouslySetInnerHTML={{ __html: slide }}
-                        />
-                        <div className="absolute bottom-1 right-1 bg-slate-900/80 px-1 py-0.5 rounded text-[8px] font-bold text-white leading-none">
-                          {idx + 1}
-                        </div>
-                      </button>
-                    ))}
+                    {slides.map((slide, idx) => {
+                      const thumbScale = 112 / nativeSlideSize.width;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentSlideIndex(idx)}
+                          className={`relative flex-shrink-0 w-28 bg-white rounded-lg border-2 overflow-hidden cursor-pointer transition-all ${
+                            idx === currentSlideIndex
+                              ? "border-primary-500 scale-105 shadow-md shadow-primary-500/20"
+                              : "border-slate-700 hover:border-slate-500 opacity-60 hover:opacity-100"
+                          }`}
+                          style={{ aspectRatio: `${nativeSlideSize.width}/${nativeSlideSize.height}` }}
+                        >
+                          <div
+                            className="pptx-slide select-none pointer-events-none overflow-hidden origin-top-left"
+                            style={{
+                              transform: `scale(${thumbScale})`,
+                              width: `${nativeSlideSize.width}px`,
+                              height: `${nativeSlideSize.height}px`,
+                            }}
+                            dangerouslySetInnerHTML={{ __html: slide }}
+                          />
+                          <div className="absolute bottom-1 right-1 bg-slate-900/80 px-1 py-0.5 rounded text-[8px] font-bold text-white leading-none">
+                            {idx + 1}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -754,7 +800,6 @@ export default function SecureViewerPage() {
                 </p>
               </div>
 
-              {/* For non-renderable files, allow inline viewing via object tag */}
               <object
                 data={blobUrl}
                 type={mimeType}
