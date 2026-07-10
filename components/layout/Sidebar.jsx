@@ -21,6 +21,7 @@ const icons = {
   CalendarDays,
   FolderOpen,
   Settings,
+  GraduationCap,
 };
 
 export default function Sidebar() {
