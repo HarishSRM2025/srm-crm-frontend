@@ -4,8 +4,9 @@ import { LuClock as Clock, LuCircleCheck as CheckCircle2, LuCircleX as XCircle, 
 import { useEvents, overallStatus } from "@/context/EventsContext";
 import { STATUS } from "@/lib/events-data";
 
-export default function TrackingSummary() {
-  const { requests } = useEvents();
+export default function TrackingSummary({ requests: propRequests }) {
+  const { requests: contextRequests } = useEvents();
+  const requests = propRequests !== undefined ? propRequests : contextRequests;
 
   const counts = requests.reduce(
     (acc, r) => {

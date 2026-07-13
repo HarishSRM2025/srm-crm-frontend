@@ -93,3 +93,68 @@ body {
   margin: 0 auto 2rem auto !important;
   box-sizing: border-box !important;
 }
+
+/* PPTX Slide Viewer Layout Overrides */
+.pptx-slide {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.pptx-slide * {
+  line-height: normal !important;
+}
+
+.pptx-slide div {
+  line-height: normal !important;
+}
+
+.pptx-slide p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: normal !important;
+}
+
+.pptx-slide span {
+  line-height: normal !important;
+}
+
+.pptx-slide ul {
+  list-style-type: disc !important;
+  list-style-position: inside !important;
+  margin: 0 !important;
+  padding-left: 1.5rem !important;
+}
+
+.pptx-slide ol {
+  list-style-type: decimal !important;
+  list-style-position: inside !important;
+  margin: 0 !important;
+  padding-left: 1.5rem !important;
+}
+
+.pptx-slide li {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.pptx-slide table {
+  border-collapse: collapse !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.pptx-slide td,
+.pptx-slide th {
+  padding: inherit !important;
+  border: inherit !important;
+}
+
+.pptx-slide .slide-container {
+  background-color: transparent !important;
+}
+
+.pptx-slide .slide {
+  left: 0 !important;
+  top: 0 !important;
+}
+

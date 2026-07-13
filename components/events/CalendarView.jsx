@@ -74,8 +74,9 @@ function parseSingleDate(str) {
   return null;
 }
 
-export default function CalendarView() {
-  const { requests } = useEvents();
+export default function CalendarView({ requests: propRequests }) {
+  const { requests: contextRequests } = useEvents();
+  const requests = propRequests !== undefined ? propRequests : contextRequests;
 
   const [currentYear, setCurrentYear] = useState(2026);
   const [currentMonth, setCurrentMonth] = useState(6); // Default: July 2026

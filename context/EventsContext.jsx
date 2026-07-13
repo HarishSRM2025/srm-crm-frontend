@@ -42,6 +42,16 @@ export function EventsProvider({ children }) {
     };
   }, [user]);
 
+  const myRequests = useMemo(
+    () => requests.filter((r) => r.category === "own" || r.userId === user?.id),
+    [requests, user]
+  );
+
+  const approvalRequests = useMemo(
+    () => requests.filter((r) => r.category === "approval_pending" || r.category === "approval_acted"),
+    [requests]
+  );
+
   const addRequest = async (form) => {
     const newRequest = await createEvent(form);
     setRequests((prev) => [newRequest, ...prev.filter((request) => request.id !== newRequest.id)]);
@@ -98,6 +108,8 @@ export function EventsProvider({ children }) {
   const value = useMemo(
     () => ({
       requests,
+      myRequests,
+      approvalRequests,
       loading,
       error,
       addRequest,
@@ -105,7 +117,7 @@ export function EventsProvider({ children }) {
       updateOfficeUse,
       getRequest,
     }),
-    [requests, loading, error]
+    [requests, myRequests, approvalRequests, loading, error]
   );
 
   return <EventsContext.Provider value={value}>{children}</EventsContext.Provider>;

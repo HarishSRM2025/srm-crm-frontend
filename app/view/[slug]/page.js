@@ -316,7 +316,10 @@ export default function SecureViewerPage() {
       const probe = measureProbeRef.current;
       if (!probe) return;
       const first = probe.firstElementChild;
-      const rect = first
+      const innerSlide = first ? first.firstElementChild : null;
+      const rect = innerSlide
+        ? innerSlide.getBoundingClientRect()
+        : first
         ? first.getBoundingClientRect()
         : probe.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
@@ -372,8 +375,12 @@ export default function SecureViewerPage() {
           letterbox: true,
         });
 
+        const fixedSlides = slidesHtml.map(slide =>
+          slide.replace(/font-size:\s*([\d.]+)pt/g, 'font-size: $1px')
+        );
+
         if (active) {
-          setSlides(slidesHtml);
+          setSlides(fixedSlides);
           setCurrentSlideIndex(0);
         }
       } catch (err) {

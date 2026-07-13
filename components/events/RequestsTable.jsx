@@ -14,8 +14,9 @@ const filters = [
   { key: "rejected", label: "Rejected" },
 ];
 
-export default function RequestsTable() {
-  const { requests, loading, error } = useEvents();
+export default function RequestsTable({ requests: propRequests, title = "Track Event Requests", subtitle = "Scoping is automatically applied based on your role context." }) {
+  const { requests: contextRequests, loading, error } = useEvents();
+  const requests = propRequests !== undefined ? propRequests : contextRequests;
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const { user: currentUser } = useAuth();
@@ -27,8 +28,7 @@ export default function RequestsTable() {
       (r.id?.toLowerCase().includes(search.toLowerCase()) ||
         r.form?.purpose?.toLowerCase().includes(search.toLowerCase()) ||
         r.form?.applicantName?.toLowerCase().includes(search.toLowerCase()));
-    const matchesUser = r.userId === currentUser.id;
-    return matchesFilter && matchesSearch && matchesUser;
+    return matchesFilter && matchesSearch;
   });
 
   return (
@@ -41,8 +41,8 @@ export default function RequestsTable() {
       {/* Header and Filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
         <div>
-          <h2 className="text-sm font-extrabold text-slate-800">Track Event Requests</h2>
-          <p className="text-[10px] text-slate-400 font-bold mt-0.5">Scoping is automatically applied based on your role context.</p>
+          <h2 className="text-sm font-extrabold text-slate-800">{title}</h2>
+          <p className="text-[10px] text-slate-400 font-bold mt-0.5">{subtitle}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
