@@ -14,6 +14,7 @@ import {
   LuFolderOpen as FolderOpen,
 } from "react-icons/lu";
 import { navItems } from "@/lib/data";
+import { useAuth } from "@/context/AuthContext";
 
 const icons = {
   LayoutDashboard,
@@ -26,6 +27,8 @@ const icons = {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+  const initials = user?.email_id ? user.email_id.split("@")[0].slice(0, 2).toUpperCase() : "U";
 
   return (
     <aside className="hidden lg:flex lg:w-72 lg:flex-col lg:fixed lg:inset-y-0 border-r border-slate-200 bg-white text-slate-900 z-30">
@@ -95,9 +98,9 @@ export default function Sidebar() {
               <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-secondary-500 ring-1 ring-white" />
             </button>
           </div>
-          <Link href="/signin" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-red-500 transition-colors" title="Sign out">
+          <button onClick={logout} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-red-500 transition-colors" title="Sign out">
             <LogOut size={15} />
-          </Link>
+          </button>
         </div>
 
         {/* Separator */}
@@ -107,16 +110,16 @@ export default function Sidebar() {
         <div className="flex items-center gap-3 rounded-2xl bg-slate-50 border border-slate-200 p-3 hover:bg-white hover:border-slate-300 transition-all duration-200 cursor-pointer group">
           <div className="relative">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary-700 bg-gradient-to-br from-primary-500 to-primary-700 text-[13px] font-bold text-white">
-              AK
+              {initials}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-secondary-500" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-semibold text-slate-800 group-hover:text-slate-950 transition-colors">
-              Dr. Arun Krishnan
+              {user?.email_id || "Guest"}
             </p>
             <p className="truncate text-[10px] font-medium text-slate-500 mt-0.5">
-              Professor &amp; HOD
+              {user?.role || "Viewer"}
             </p>
           </div>
           <ChevronRight

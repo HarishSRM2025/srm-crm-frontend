@@ -5,7 +5,7 @@ import { LuSave as Save } from "react-icons/lu";
 
 const items = ["Mike sets", "Whiteboard", "Other items"];
 
-export default function OfficeUseSection({ officeUse, onSave }) {
+export default function OfficeUseSection({ officeUse, onSave, readOnly }) {
   const [local, setLocal] = useState({
     availability: officeUse.availability || "",
     allotment: officeUse.allotment || "",
@@ -33,9 +33,10 @@ export default function OfficeUseSection({ officeUse, onSave }) {
         <label className="block">
           <span className="text-xs font-medium text-primary-600">1. Availability / prior commitment</span>
           <select
-            className="mt-1.5 w-full rounded-lg border border-primary-100 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+            className="mt-1.5 w-full rounded-lg border border-primary-100 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 disabled:opacity-75 disabled:cursor-not-allowed"
             value={local.availability}
             onChange={(e) => setLocal((p) => ({ ...p, availability: e.target.value }))}
+            disabled={readOnly}
           >
             <option value="">Select…</option>
             <option value="Available">Available</option>
@@ -47,10 +48,11 @@ export default function OfficeUseSection({ officeUse, onSave }) {
         <label className="block">
           <span className="text-xs font-medium text-primary-600">2. Allotment for (hall / venue)</span>
           <input
-            className="mt-1.5 w-full rounded-lg border border-primary-100 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+            className="mt-1.5 w-full rounded-lg border border-primary-100 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 disabled:opacity-75 disabled:cursor-not-allowed"
             placeholder="e.g. Main Auditorium"
             value={local.allotment}
             onChange={(e) => setLocal((p) => ({ ...p, allotment: e.target.value }))}
+            disabled={readOnly}
           />
         </label>
 
@@ -61,12 +63,12 @@ export default function OfficeUseSection({ officeUse, onSave }) {
               <button
                 type="button"
                 key={item}
-                onClick={() => toggleItem(item)}
+                onClick={() => !readOnly && toggleItem(item)}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                   local.allotmentItems.includes(item)
                     ? "bg-secondary-600 text-white"
                     : "bg-white border border-primary-100 text-primary-500 hover:border-primary-300"
-                }`}
+                } ${readOnly ? "cursor-default opacity-75" : ""}`}
               >
                 {item}
               </button>
@@ -79,21 +81,24 @@ export default function OfficeUseSection({ officeUse, onSave }) {
             3. Alternate date for the programme (if hall not available)
           </span>
           <input
-            className="mt-1.5 w-full rounded-lg border border-primary-100 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+            className="mt-1.5 w-full rounded-lg border border-primary-100 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 disabled:opacity-75 disabled:cursor-not-allowed"
             placeholder="e.g. 12 Jul 2026"
             value={local.alternateDate}
             onChange={(e) => setLocal((p) => ({ ...p, alternateDate: e.target.value }))}
+            disabled={readOnly}
           />
         </label>
       </div>
 
-      <button
-        onClick={() => onSave(local)}
-        className="mt-4 flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700"
-      >
-        <Save size={14} />
-        Save office notes
-      </button>
+      {!readOnly && (
+        <button
+          onClick={() => onSave(local)}
+          className="mt-4 flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700"
+        >
+          <Save size={14} />
+          Save office notes
+        </button>
+      )}
     </section>
   );
 }

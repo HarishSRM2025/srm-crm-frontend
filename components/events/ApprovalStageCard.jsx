@@ -5,7 +5,7 @@ import { LuCheck as Check, LuX as X, LuLock as Lock } from "react-icons/lu";
 import StatusBadge from "@/components/events/StatusBadge";
 import { STATUS } from "@/lib/events-data";
 
-export default function ApprovalStageCard({ stageKey, stageLabel, stage, locked, onDecide }) {
+export default function ApprovalStageCard({ stageKey, stageLabel, stage, locked, onDecide, readOnly }) {
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
   const decided = stage.status !== STATUS.PENDING;
@@ -25,10 +25,10 @@ export default function ApprovalStageCard({ stageKey, stageLabel, stage, locked,
           </p>
           {stage.note && <p className="mt-1 text-xs text-primary-500">"{stage.note}"</p>}
         </div>
-      ) : locked ? (
+      ) : (locked || readOnly) ? (
         <div className="mt-3 flex items-center gap-2 rounded-lg bg-primary-50/60 px-3 py-2.5 text-xs text-primary-400">
           <Lock size={13} />
-          Waiting on an earlier approval stage.
+          {readOnly ? "View only stage." : "Waiting on an earlier approval stage."}
         </div>
       ) : (
         <div className="mt-3 space-y-2">

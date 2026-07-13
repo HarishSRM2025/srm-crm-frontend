@@ -1,6 +1,7 @@
 import "./globals.css";
 import { EventsProvider } from "@/context/EventsContext";
 import { DoctorsProvider } from "@/context/DoctorsContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata = {
   title: "SRM Medical College · Admin Portal",
@@ -18,9 +19,11 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="font-sans text-primary-950 antialiased bg-white">
-        <DoctorsProvider>
-          <EventsProvider>{children}</EventsProvider>
-        </DoctorsProvider>
+        <AuthProvider>
+          <DoctorsProvider>
+            <EventsProvider>{children}</EventsProvider>
+          </DoctorsProvider>
+        </AuthProvider>
       </body>
     </html>
   );

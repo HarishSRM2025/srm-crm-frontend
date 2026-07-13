@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LuGraduationCap as GraduationCap,
@@ -5,9 +9,10 @@ import {
   LuMail as Mail,
   LuArrowRight as ArrowRight,
   LuCheck as Check,
+  LuLoader as Loader,
 } from "react-icons/lu";
-
-export const dynamic = "force-dynamic";
+import { signinUser } from "@/lib/events-api";
+import { useAuth } from "@/context/AuthContext";
 
 const highlights = [
   "Doctor profile approvals",
@@ -16,6 +21,35 @@ const highlights = [
 ];
 
 export default function SignInPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const userData = await signinUser(email, password);
+      login(userData);
+      router.push("/");
+    } catch (err) {
+      setError(err.message || "Invalid credentials. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#F1F4F9] px-4 py-10 font-[Inter,system-ui,sans-serif]">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center justify-center">
@@ -78,11 +112,21 @@ export default function SignInPage() {
                 Use your institutional credentials to continue.
               </p>
 
-              <form action="/" className="mt-8 space-y-5">
+              {/* Error banner */}
+              {error && (
+                <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                 <Field label="Email address">
                   <Mail size={15} className="text-[#94A3B8]" />
                   <input
+                    id="signin-email"
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@srm.edu"
                     className="w-full bg-transparent text-[14px] text-[#0B2C7A] placeholder:text-[#94A3B8] focus:outline-none"
                   />
@@ -91,37 +135,44 @@ export default function SignInPage() {
                 <Field label="Password">
                   <Lock size={15} className="text-[#94A3B8]" />
                   <input
+                    id="signin-password"
                     type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password"
                     className="w-full bg-transparent text-[14px] text-[#0B2C7A] placeholder:text-[#94A3B8] focus:outline-none"
                   />
                 </Field>
 
-                <div className="flex items-center justify-between gap-3">
-                  <label className="flex items-center gap-2 text-[13px] font-medium text-[#64748B]">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-[#cbd5e1] text-[#1147cc] focus:ring-[#1147cc]/30"
-                    />
-                    Remember me
-                  </label>
-                  <Link href="#" className="text-[13px] font-semibold text-[#1147cc] hover:text-[#0B2C7A]">
-                    Forgot password?
-                  </Link>
-                </div>
-
                 <button
+                  id="signin-submit"
                   type="submit"
-                  className="group flex w-full items-center justify-center gap-2 rounded-lg bg-[#1147cc] px-4 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[#0B2C7A] focus:outline-none focus:ring-2 focus:ring-[#1147cc]/40 focus:ring-offset-2"
+                  disabled={loading}
+                  className="group flex w-full items-center justify-center gap-2 rounded-lg bg-[#1147cc] px-4 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[#0B2C7A] focus:outline-none focus:ring-2 focus:ring-[#1147cc]/40 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Sign in
-                  <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
+                  {loading ? (
+                    <>
+                      <Loader size={15} className="animate-spin" />
+                      Signing in…
+                    </>
+                  ) : (
+                    <>
+                      Sign in
+                      <ArrowRight
+                        size={15}
+                        className="transition-transform group-hover:translate-x-0.5"
+                      />
+                    </>
+                  )}
                 </button>
               </form>
 
               <p className="mt-6 text-center text-[13px] text-[#64748B]">
                 New to the portal?{" "}
-                <Link href="/signup" className="font-semibold text-[#1147cc] hover:text-[#0B2C7A]">
+                <Link
+                  href="/signup"
+                  className="font-semibold text-[#1147cc] hover:text-[#0B2C7A]"
+                >
                   Create an account
                 </Link>
               </p>

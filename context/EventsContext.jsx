@@ -1,18 +1,27 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { seedRequests, STATUS } from "@/lib/events-data";
+import { STATUS } from "@/lib/events-data";
 import { createEvent, fetchEvents, updateEvent } from "@/lib/events-api";
+import { useAuth } from "@/context/AuthContext";
 
 const EventsContext = createContext(null);
 
 export function EventsProvider({ children }) {
-  const [requests, setRequests] = useState(seedRequests());
+  const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { user } = useAuth();
 
   useEffect(() => {
+    if (!user) {
+      setRequests([]);
+      setLoading(false);
+      return;
+    }
+
     let active = true;
+    setLoading(true);
 
     fetchEvents()
       .then((events) => {
@@ -31,7 +40,7 @@ export function EventsProvider({ children }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [user]);
 
   const addRequest = async (form) => {
     const newRequest = await createEvent(form);
