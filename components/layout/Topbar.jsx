@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   LuSearch as Search,
@@ -9,12 +10,28 @@ import {
   LuCircleHelp as HelpCircle,
 } from "react-icons/lu";
 
+const ALLOWED_ACTION_ROLES = ["User", "HOD"];
+
 export default function Topbar({
   title = "Dashboard",
   subtitle = "",
   actionLabel = "",
   actionHref = "#",
 }) {
+  const [canShowAction, setCanShowAction] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("srm_crm_user");
+      if (stored) {
+        const user = JSON.parse(stored);
+        setCanShowAction(ALLOWED_ACTION_ROLES.includes(user?.role));
+      }
+    } catch (err) {
+      console.error("Failed to read srm_crm_user from localStorage:", err);
+    }
+  }, []);
+
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-xl lg:px-8">
       <button className="lg:hidden text-slate-600 hover:text-slate-900">
@@ -54,7 +71,7 @@ export default function Topbar({
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-secondary-600 ring-2 ring-white" />
         </button>
 
-        {actionLabel && (
+        {actionLabel && canShowAction && (
           <Link
             href={actionHref}
             className="hidden sm:flex items-center gap-1.5 rounded-full border border-slate-900 bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:border-slate-700 hover:bg-slate-800 transition-all"

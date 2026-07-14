@@ -74,9 +74,10 @@ function parseSingleDate(str) {
   return null;
 }
 
-export default function CalendarView({ requests: propRequests }) {
+export default function CalendarView({ requests: propRequests, ownRequestIds }) {
   const { requests: contextRequests } = useEvents();
   const requests = propRequests !== undefined ? propRequests : contextRequests;
+  const ownIds = ownRequestIds instanceof Set ? ownRequestIds : new Set(ownRequestIds || []);
 
   const [currentYear, setCurrentYear] = useState(2026);
   const [currentMonth, setCurrentMonth] = useState(6); // Default: July 2026
@@ -116,12 +117,12 @@ export default function CalendarView({ requests: propRequests }) {
         if (!daysMap[dateStr]) {
           daysMap[dateStr] = [];
         }
-        daysMap[dateStr].push({ ...r, status });
+        daysMap[dateStr].push({ ...r, status, isOwn: ownIds.has(r.id) });
       });
     });
 
     return daysMap;
-  }, [requests, selectedHall, selectedStatus]);
+  }, [requests, selectedHall, selectedStatus, ownIds]);
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
@@ -176,6 +177,8 @@ export default function CalendarView({ requests: propRequests }) {
   const selectedEvent = useMemo(() => {
     return requests.find((r) => r.id === selectedEventId);
   }, [requests, selectedEventId]);
+
+  const isSelectedEventOwn = selectedEvent ? ownIds.has(selectedEvent.id) : false;
 
   const eventStyles = {
     [STATUS.APPROVED]: {
@@ -249,6 +252,14 @@ export default function CalendarView({ requests: propRequests }) {
                 <option value={STATUS.REJECTED}>Rejected</option>
               </select>
             </div>
+
+            {/* Legend for "own" highlight, only meaningful if any own events exist */}
+            {ownIds.size > 0 && (
+              <div className="flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5">
+                <span className="h-2 w-2 rounded-full bg-amber-500 ring-2 ring-amber-200" />
+                <span className="text-[10px] font-bold text-amber-700">Your bookings</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -289,12 +300,25 @@ export default function CalendarView({ requests: propRequests }) {
                         onClick={() => setSelectedEventId(evt.id)}
                         className={`w-full text-left rounded-lg px-2 py-1.5 border text-[9px] font-bold transition-all truncate block ${
                           selectedEventId === evt.id ? "ring-2 ring-primary-500" : ""
+                        } ${
+                          evt.isOwn ? "ring-1 ring-amber-400 border-amber-300" : ""
                         } ${eventStyles[evt.status].badge}`}
-                        title={`${evt.form.purpose} (${evt.officeUse?.allotment || "Unassigned"})`}
+                        title={`${evt.form.purpose} ${
+                          evt.isOwn ? " — Your booking" : ""
+                        }`}
                       >
                         <span className="flex items-center gap-1.5">
-                          <span className={`h-2 w-2 shrink-0 rounded-full ${eventStyles[evt.status].dot}`} />
+                          <span
+                            className={`h-2 w-2 shrink-0 rounded-full ${
+                              evt.isOwn ? "bg-amber-500" : eventStyles[evt.status].dot
+                            }`}
+                          />
                           <span className="truncate">{evt.form.purpose || "Event Request"}</span>
+                          {evt.isOwn && (
+                            <span className="ml-auto shrink-0 text-[7px] font-extrabold text-amber-600 bg-amber-100 px-1 py-0.5 rounded uppercase tracking-wide">
+                              You
+                            </span>
+                          )}
                         </span>
                         {evt.officeUse?.allotment && (
                           <span className="block mt-0.5 text-[8px] opacity-75 font-semibold truncate ml-3.5">
@@ -314,12 +338,23 @@ export default function CalendarView({ requests: propRequests }) {
       {/* Details Side-Drawer Card */}
       <div className="xl:col-span-1">
         {selectedEvent ? (
-          <div className="sticky top-20 rounded-2xl border border-slate-100 bg-white p-5 space-y-4">
+          <div
+            className={`sticky top-20 rounded-2xl border bg-white p-5 space-y-4 ${
+              isSelectedEventOwn ? "border-amber-300 ring-1 ring-amber-200" : "border-slate-100"
+            }`}
+          >
             <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
-                <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 uppercase tracking-wide">
-                  {selectedEvent.id}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 uppercase tracking-wide">
+                    {selectedEvent.id}
+                  </span>
+                  {isSelectedEventOwn && (
+                    <span className="text-[9px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200 uppercase tracking-wide">
+                      Yours
+                    </span>
+                  )}
+                </div>
                 <h3 className="text-xs font-bold text-slate-800 mt-2 leading-snug">
                   {selectedEvent.form.purpose || "Event Request"}
                 </h3>

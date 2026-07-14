@@ -8,13 +8,22 @@ import CalendarView from "@/components/events/CalendarView";
 import { useEvents } from "@/context/EventsContext";
 import { useAuth } from "@/context/AuthContext";
 
+const BOTH_TABS_ROLES = ["HOD"];
+const APPROVALS_ONLY_ROLES = ["HOI", "Manager"];
+
 export default function EventsCalendarPage() {
   const { myRequests, approvalRequests } = useEvents();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("own"); // "own" | "approvals"
 
-  const hasApprovals = user && ["HOD", "HOI", "Manager", "Admin", "SuperAdmin"].includes(user.role);
-  const currentTab = hasApprovals ? activeTab : "own";
+  const canSeeBothTabs = user && BOTH_TABS_ROLES.includes(user.role);
+  const isApprovalsOnly = user && APPROVALS_ONLY_ROLES.includes(user.role);
+
+  // HOD: whatever tab is selected via the switcher
+  // HOI / Manager: locked to approvals
+  // Everyone else (User, Admin, SuperAdmin): locked to own requests
+  const currentTab = canSeeBothTabs ? activeTab : isApprovalsOnly ? "approvals" : "own";
+
   const displayedRequests = currentTab === "own" ? myRequests : approvalRequests;
 
   return (
@@ -47,8 +56,8 @@ export default function EventsCalendarPage() {
               </Link>
             </div>
 
-            {/* Scope / Category Switcher (Only if user has approval rights) */}
-            {hasApprovals && (
+            {/* Scope / Category Switcher (Only for roles with access to both views) */}
+            {canSeeBothTabs && (
               <div className="flex gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200/50 mb-2">
                 <button
                   onClick={() => setActiveTab("own")}

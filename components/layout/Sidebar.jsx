@@ -6,29 +6,62 @@ import {
   LuLayoutDashboard as LayoutDashboard,
   LuStethoscope as Stethoscope,
   LuCalendarDays as CalendarDays,
+  LuCalendarPlus as CalendarPlus,
+  LuClipboardCheck as ClipboardCheck,
   LuSettings as Settings,
   LuGraduationCap as GraduationCap,
+  LuLayoutTemplate as LayoutTemplate,
   LuChevronRight as ChevronRight,
   LuLogOut as LogOut,
   LuBell as Bell,
-  LuFolderOpen as FolderOpen,
 } from "react-icons/lu";
-import { navItems } from "@/lib/data";
 import { useAuth } from "@/context/AuthContext";
 
-const icons = {
-  LayoutDashboard,
-  Stethoscope,
-  CalendarDays,
-  FolderOpen,
-  Settings,
-  GraduationCap,
+// Role -> nav items. Each role gets its own explicit set (rather than
+// filtering one shared list) since labels/links genuinely differ per role.
+const ROLE_NAV_CONFIG = {
+  User: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Event booking", href: "/events/new", icon: CalendarPlus },
+    { label: "Settings", href: "/settings", icon: Settings },
+  ],
+  HOD: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Events", href: "/events", icon: CalendarDays },
+    { label: "Settings", href: "/settings", icon: Settings },
+  ],
+  HOI: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Approvals", href: "/events", icon: ClipboardCheck },
+    { label: "Settings", href: "/settings", icon: Settings },
+  ],
+  Manager: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Approvals", href: "/events", icon: ClipboardCheck },
+    { label: "Settings", href: "/settings", icon: Settings },
+  ],
+  Admin: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Doctors", href: "/doctors", icon: Stethoscope },
+    { label: "Settings", href: "/settings", icon: Settings },
+  ],
+  SuperAdmin: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Doctors", href: "/doctors", icon: Stethoscope },
+    { label: "Templates", href: "/templates", icon: LayoutTemplate },
+    { label: "Settings", href: "/settings", icon: Settings },
+  ],
 };
+
+// Fallback for unknown/unset roles, so the sidebar never renders empty.
+const DEFAULT_NAV = ROLE_NAV_CONFIG.User;
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const initials = user?.email_id ? user.email_id.split("@")[0].slice(0, 2).toUpperCase() : "U";
+
+  const navItems = (user && ROLE_NAV_CONFIG[user.role]) || DEFAULT_NAV;
 
   return (
     <aside className="hidden lg:flex lg:w-72 lg:flex-col lg:fixed lg:inset-y-0 border-r border-slate-200 bg-white text-slate-900 z-30">
@@ -54,7 +87,7 @@ export default function Sidebar() {
         </p>
 
         {navItems.map((item) => {
-          const Icon = icons[item.icon];
+          const Icon = item.icon;
           const isActive =
             item.href === "/"
               ? pathname === "/"
