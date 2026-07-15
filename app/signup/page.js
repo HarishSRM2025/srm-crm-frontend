@@ -13,6 +13,7 @@ import {
   LuShieldCheck as ShieldCheck,
   LuLoader as Loader,
   LuChevronDown as ChevronDown,
+  LuUser as User,
 } from "react-icons/lu";
 import { signupUser, fetchInstitutes } from "@/lib/events-api";
 
@@ -33,6 +34,7 @@ const pipeline = [
 export default function SignUpPage() {
   const router = useRouter();
 
+  const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -79,6 +81,10 @@ export default function SignUpPage() {
     setError("");
     setSuccess("");
 
+    if (!userName.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
     if (!email || !password) {
       setError("Email and password are required.");
       return;
@@ -107,6 +113,7 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       const payload = {
+        user_name: userName.trim(),
         email_id: email,
         password,
         role,
@@ -172,6 +179,19 @@ export default function SignUpPage() {
 
               <form onSubmit={handleSubmit} className="mt-9 space-y-5">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {/* Full Name */}
+                  <Field label="Full name">
+                    <User size={15} className="text-[#94A3B8]" />
+                    <input
+                      id="signup-name"
+                      type="text"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="John Doe"
+                      className="w-full bg-transparent text-[14px] text-[#0B2C7A] placeholder:text-[#94A3B8] focus:outline-none"
+                    />
+                  </Field>
+
                   {/* Email */}
                   <Field label="Email address">
                     <Mail size={15} className="text-[#94A3B8]" />
