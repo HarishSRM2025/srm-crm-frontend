@@ -13,8 +13,9 @@ export default function NewDoctorPage() {
         <Topbar
           title="New Doctor Profile"
           subtitle="Create a new faculty profile for the college directory."
-          actionLabel="Doctor Directory"
-          actionHref="/doctors"
+          actionLabel="Add Faculty"
+          actionHref="/doctors/new"
+          allowedActionRoles={["Admin", "SuperAdmin"]}
         />
 
         <main className="mx-auto max-w-3xl space-y-6 p-4 lg:p-8">

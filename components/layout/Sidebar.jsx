@@ -48,6 +48,7 @@ const ROLE_NAV_CONFIG = {
   SuperAdmin: [
     { label: "Dashboard", href: "/", icon: LayoutDashboard },
     { label: "Doctors", href: "/doctors", icon: Stethoscope },
+    { label: "Institution", href: "/institutes", icon: GraduationCap },
     { label: "Templates", href: "/templates", icon: LayoutTemplate },
     { label: "Settings", href: "/settings", icon: Settings },
   ],

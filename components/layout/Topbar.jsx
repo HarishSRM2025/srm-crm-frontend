@@ -10,13 +10,14 @@ import {
   LuCircleHelp as HelpCircle,
 } from "react-icons/lu";
 
-const ALLOWED_ACTION_ROLES = ["User", "HOD"];
+const DEFAULT_ALLOWED_ACTION_ROLES = ["User", "HOD"];
 
 export default function Topbar({
   title = "Dashboard",
   subtitle = "",
   actionLabel = "",
   actionHref = "#",
+  allowedActionRoles = DEFAULT_ALLOWED_ACTION_ROLES,
 }) {
   const [canShowAction, setCanShowAction] = useState(false);
 
@@ -25,12 +26,12 @@ export default function Topbar({
       const stored = localStorage.getItem("srm_crm_user");
       if (stored) {
         const user = JSON.parse(stored);
-        setCanShowAction(ALLOWED_ACTION_ROLES.includes(user?.role));
+        setCanShowAction(allowedActionRoles.includes(user?.role));
       }
     } catch (err) {
       console.error("Failed to read srm_crm_user from localStorage:", err);
     }
-  }, []);
+  }, [allowedActionRoles]);
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-xl lg:px-8">

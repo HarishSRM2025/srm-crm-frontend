@@ -136,6 +136,7 @@ export default function DoctorsDirectoryPage() {
           subtitle={`${doctors.length} doctors across ${Object.keys(deptCounts).length} departments`}
           actionLabel="Create profile"
           actionHref="/doctors/new"
+          allowedActionRoles={["Admin", "SuperAdmin"]}
         />
 
         <main className="space-y-6 p-4 lg:p-8">
